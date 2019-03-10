@@ -73,13 +73,16 @@ func contains(s []int, e int) bool {
 }
 
 func NewBot(url string, apiToken string, userAgent string, onStart OnStartHandler, onEvent OnEventHandler) (*Bot, error) {
-	client := sse.NewClient(url)
+	accessUrl := fmt.Sprintf("%s/api/stream?access_token=%s", url, apiToken)
+	client := sse.NewClient(accessUrl)
 	bot := &Bot{
+		url:       url,
 		client:    client,
 		apiToken:  apiToken,
 		onStart:   onStart,
 		onEvent:   onEvent,
 		userAgent: userAgent,
+		botID:     -1,
 	}
 	for k, v := range bot.getHeaders() {
 		bot.client.Headers[k] = v
@@ -97,6 +100,7 @@ func (bot *Bot) Start() {
 			}
 			bot.botID = msg.Records.Bot.ID
 			bot.botName = msg.Records.Bot.Name
+			fmt.Printf("botID=%d, botName=%s\n", bot.botID, bot.botName)
 			bot.onStart(bot, &msg)
 		} else {
 			// 普通のイベントを受け取る
@@ -161,7 +165,7 @@ func (bot *Bot) PostMessage(roomID int, message string) (string, error) {
 
 	req.Header.Set("Content-Type", "application/json")
 	for k, v := range bot.getHeaders() {
-		res.Header.Set(k, v)
+		req.Header.Set(k, v)
 	}
 
 	if res, err = client.Do(req); err != nil {
