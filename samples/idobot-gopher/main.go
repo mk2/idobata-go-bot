@@ -101,11 +101,11 @@ func main() {
 		log.Fatal("IDOBATA_API_TOKEN was not set.")
 	}
 
-	var onStart idobot.OnStartHandler = func(bot *idobot.Bot, msg *idobot.SeedMsg) {
+	var onStart idobot.OnStartHandler = func(bot idobot.Bot, msg *idobot.SeedMsg) {
 		fmt.Printf("[%s] Connection Established.\n", bot.BotName())
 	}
 
-	var onEvent idobot.OnEventHandler = func(bot *idobot.Bot, msg *idobot.EventMsg) {
+	var onEvent idobot.OnEventHandler = func(bot idobot.Bot, msg *idobot.EventMsg) {
 		botName := bot.BotName()
 		roomID := msg.Data.Message.RoomID
 		messageBody := msg.Data.Message.BodyPlain
