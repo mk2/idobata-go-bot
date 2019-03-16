@@ -13,11 +13,11 @@ import "github.com/mk2/idobot"
 2. initialize idobot
 
 ```go
-var onStart = func(bot *idobot.Bot, msg *SeedMsg) {
+var onStart = func(bot idobot.Bot, msg *SeedMsg) {
  // do anything on initial message receiving.
 }
 
-var onEvent = func(bot *idobot.Bot, msg *EventMsg) {
+var onEvent = func(bot idobot.Bot, msg *EventMsg) {
  // do anything on each event message receiving.
 }
 
