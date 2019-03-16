@@ -11,11 +11,19 @@ import (
 	"github.com/r3labs/sse"
 )
 
-type OnStartHandler func(bot *Bot, msg *SeedMsg)
+type Bot interface {
+	Start() error
+	PostMessage(roomID int, message string) (string, error)
+	BotID() int
+	BotName() string
+}
 
-type OnEventHandler func(bot *Bot, msg *EventMsg)
+type OnStartHandler func(bot Bot, msg *SeedMsg)
 
-type Bot struct {
+type OnEventHandler func(bot Bot, msg *EventMsg)
+
+type botImpl struct {
+	Bot
 	url       string
 	botID     int
 	botName   string
@@ -72,10 +80,10 @@ func contains(s []int, e int) bool {
 	return false
 }
 
-func NewBot(url string, apiToken string, userAgent string, onStart OnStartHandler, onEvent OnEventHandler) (*Bot, error) {
-	accessUrl := fmt.Sprintf("%s/api/stream?access_token=%s", url, apiToken)
-	client := sse.NewClient(accessUrl)
-	bot := &Bot{
+func NewBot(url string, apiToken string, userAgent string, onStart OnStartHandler, onEvent OnEventHandler) (Bot, error) {
+	accessURL := fmt.Sprintf("%s/api/stream?access_token=%s", url, apiToken)
+	client := sse.NewClient(accessURL)
+	bot := &botImpl{
 		url:       url,
 		client:    client,
 		apiToken:  apiToken,
@@ -90,8 +98,8 @@ func NewBot(url string, apiToken string, userAgent string, onStart OnStartHandle
 	return bot, nil
 }
 
-func (bot *Bot) Start() {
-	bot.client.SubscribeRaw(func(evt *sse.Event) {
+func (bot *botImpl) Start() error {
+	return bot.client.SubscribeRaw(func(evt *sse.Event) {
 		if bot.botID == -1 {
 			// botIDが設定されていないので、初回メッセージ
 			var msg SeedMsg
@@ -128,14 +136,14 @@ func (bot *Bot) Start() {
 	})
 }
 
-func (bot *Bot) getHeaders() map[string]string {
+func (bot *botImpl) getHeaders() map[string]string {
 	return map[string]string{
 		"Authorization": fmt.Sprintf("Bearer %s", bot.apiToken),
 		"User-Agent":    bot.userAgent,
 	}
 }
 
-func (bot *Bot) PostMessage(roomID int, message string) (string, error) {
+func (bot *botImpl) PostMessage(roomID int, message string) (string, error) {
 	if roomID == 0 {
 		return "", nil
 	}
@@ -180,10 +188,10 @@ func (bot *Bot) PostMessage(roomID int, message string) (string, error) {
 	return bodyString, nil
 }
 
-func (bot *Bot) BotID() int {
+func (bot *botImpl) BotID() int {
 	return bot.botID
 }
 
-func (bot *Bot) BotName() string {
+func (bot *botImpl) BotName() string {
 	return bot.botName
 }
