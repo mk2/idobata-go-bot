@@ -95,43 +95,43 @@ func runProgram(program string) (*CompileResp, error) {
 	return &output, nil
 }
 
+func onStart(bot idobot.Bot, msg *idobot.SeedMsg) {
+	fmt.Printf("[%s] Connection Established.\n", bot.BotName())
+}
+
+func onEvent(bot idobot.Bot, msg *idobot.EventMsg) {
+	botName := bot.BotName()
+	roomID := msg.Data.Message.RoomID
+	messageBody := msg.Data.Message.BodyPlain
+	fmt.Printf("[%s][%d] Message: %s\n", botName, roomID, messageBody)
+	program := string([]rune(messageBody)[len(botName)+2:])
+	compileOutput, err := runProgram(program)
+	fmt.Printf("[%s] program=%s\n", bot.BotName(), program)
+	if err != nil {
+		bot.PostMessage(roomID, fmt.Sprintf("エラー[compile]: %s", err))
+		return
+	}
+	formatOutput, err := formatProgram(program)
+	if err != nil {
+		bot.PostMessage(roomID, fmt.Sprintf("エラー[format]: %s", err))
+		return
+	}
+	message := fmt.Sprintf("<p><pre>%s</pre></p><details><summary>元のプログラム</summary><pre>%s</pre></details>", compileOutput.Events[0].Message, formatOutput.Body)
+	fmt.Println(message)
+	bot.PostMessage(roomID, message)
+}
+
+func onError(bot idobot.Bot, err error) {
+	for roomID := range bot.RoomIDs() {
+		errMsg := fmt.Sprintf("エラー: %+v \n%sは終了しますGO。再起動してGO。", err, bot.BotName())
+		bot.PostMessage(roomID, errMsg)
+	}
+}
+
 func main() {
 	idobataAPIToken := os.Getenv("IDOBATA_API_TOKEN")
 	if len(idobataAPIToken) == 0 {
 		log.Fatal("IDOBATA_API_TOKEN was not set.")
-	}
-
-	var onStart idobot.OnStartHandler = func(bot idobot.Bot, msg *idobot.SeedMsg) {
-		fmt.Printf("[%s] Connection Established.\n", bot.BotName())
-	}
-
-	var onEvent idobot.OnEventHandler = func(bot idobot.Bot, msg *idobot.EventMsg) {
-		botName := bot.BotName()
-		roomID := msg.Data.Message.RoomID
-		messageBody := msg.Data.Message.BodyPlain
-		fmt.Printf("[%s][%d] Message: %s\n", botName, roomID, messageBody)
-		program := string([]rune(messageBody)[len(botName)+2:])
-		compileOutput, err := runProgram(program)
-		fmt.Printf("[%s] program=%s\n", bot.BotName(), program)
-		if err != nil {
-			bot.PostMessage(roomID, fmt.Sprintf("エラー[compile]: %s", err))
-			return
-		}
-		formatOutput, err := formatProgram(program)
-		if err != nil {
-			bot.PostMessage(roomID, fmt.Sprintf("エラー[format]: %s", err))
-			return
-		}
-		message := fmt.Sprintf("<p><pre>%s</pre></p><details><summary>元のプログラム</summary><pre>%s</pre></details>", compileOutput.Events[0].Message, formatOutput.Body)
-		fmt.Println(message)
-		bot.PostMessage(roomID, message)
-	}
-
-	var onError idobot.OnErrorHandler = func(bot idobot.Bot, err error) {
-		for roomID := range bot.RoomIDs() {
-			errMsg := fmt.Sprintf("エラー: %+v \n%sは終了しますGO。再起動してGO。", err, bot.BotName())
-			bot.PostMessage(roomID, errMsg)
-		}
 	}
 
 	bot, err := idobot.NewBot(idobataURL, idobataAPIToken, userAgent, onStart, onEvent, onError)
