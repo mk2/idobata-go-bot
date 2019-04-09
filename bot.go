@@ -11,30 +11,26 @@ import (
 	"github.com/r3labs/sse"
 )
 
+// Bot idobotを使うプログラムから、idobataへアクセスする方法
 type Bot interface {
 	Start() error
 	PostMessage(roomID int, message string) (string, error)
+	RoomIDs() []int
 	BotID() int
 	BotName() string
 }
 
+// OnStartHandler idobot開始時に呼ばれるコールバック
 type OnStartHandler func(bot Bot, msg *SeedMsg)
 
+// OnEventHandler idobotがメッセージを受信した際に呼ばれるコールバック
 type OnEventHandler func(bot Bot, msg *EventMsg)
 
-type botImpl struct {
-	Bot
-	url       string
-	botID     int
-	botName   string
-	client    *sse.Client
-	apiToken  string
-	userAgent string
-	prevMsgID int
-	onStart   OnStartHandler
-	onEvent   OnEventHandler
-}
+// OnErrorHandler idobotが何かしらのエラーに遭遇した際に呼ばれるコールバック
+type OnErrorHandler func(bot Bot, err error)
 
+// SeedMsg 開始時に送られてくるメッセージ
+// botの名前やidが含まれる
 type SeedMsg struct {
 	Records struct {
 		Bot struct {
@@ -45,6 +41,7 @@ type SeedMsg struct {
 	Version int `json:"version"`
 }
 
+// EventMsg 通常時に受信するメッセージ
 type EventMsg struct {
 	Data struct {
 		Type    string `json:"type"`
@@ -70,6 +67,33 @@ type IdobataMsgFormat struct {
 	Format string `json:"format"`
 }
 
+// roomIDSet idobotが動いている最中に、メッセージを受信した部屋ID一覧
+type roomIDSet struct {
+	set map[int]bool
+}
+
+func (set *roomIDSet) add(i int) bool {
+	_, found := set.set[i]
+	set.set[i] = true
+	return !found
+}
+
+// botImpl Botインターフェースを実装している実体
+type botImpl struct {
+	Bot
+	url       string
+	botID     int
+	botName   string
+	client    *sse.Client
+	apiToken  string
+	userAgent string
+	prevMsgID int
+	onStart   OnStartHandler
+	onEvent   OnEventHandler
+	onError   OnErrorHandler
+	roomIDs   *roomIDSet
+}
+
 // 配列に指定の数字が含まれているか確認する
 func contains(s []int, e int) bool {
 	for _, a := range s {
@@ -80,7 +104,8 @@ func contains(s []int, e int) bool {
 	return false
 }
 
-func NewBot(url string, apiToken string, userAgent string, onStart OnStartHandler, onEvent OnEventHandler) (Bot, error) {
+// NewBot 新しくidobotを作る
+func NewBot(url string, apiToken string, userAgent string, onStart OnStartHandler, onEvent OnEventHandler, onError OnErrorHandler) (Bot, error) {
 	accessURL := fmt.Sprintf("%s/api/stream?access_token=%s", url, apiToken)
 	client := sse.NewClient(accessURL)
 	bot := &botImpl{
@@ -89,8 +114,10 @@ func NewBot(url string, apiToken string, userAgent string, onStart OnStartHandle
 		apiToken:  apiToken,
 		onStart:   onStart,
 		onEvent:   onEvent,
+		onError:   onError,
 		userAgent: userAgent,
 		botID:     -1,
+		roomIDs:   &roomIDSet{set: make(map[int]bool)},
 	}
 	for k, v := range bot.getHeaders() {
 		bot.client.Headers[k] = v
@@ -99,7 +126,7 @@ func NewBot(url string, apiToken string, userAgent string, onStart OnStartHandle
 }
 
 func (bot *botImpl) Start() error {
-	return bot.client.SubscribeRaw(func(evt *sse.Event) {
+	err := bot.client.SubscribeRaw(func(evt *sse.Event) {
 		if bot.botID == -1 {
 			// botIDが設定されていないので、初回メッセージ
 			var msg SeedMsg
@@ -128,12 +155,19 @@ func (bot *botImpl) Start() error {
 				return
 			}
 
+			// RoomIDは保存しておく
+			bot.roomIDs.add(msg.Data.Message.RoomID)
+
 			if bot.prevMsgID != msg.Data.Message.ID {
 				bot.prevMsgID = msg.Data.Message.ID
 				bot.onEvent(bot, &msg)
 			}
 		}
 	})
+
+	bot.onError(bot, err)
+
+	return err
 }
 
 func (bot *botImpl) getHeaders() map[string]string {
@@ -186,6 +220,14 @@ func (bot *botImpl) PostMessage(roomID int, message string) (string, error) {
 	defer res.Body.Close()
 
 	return bodyString, nil
+}
+
+func (bot *botImpl) RoomIDs() []int {
+	keys := make([]int, 0, len(bot.roomIDs.set))
+	for k := range bot.roomIDs.set {
+		keys = append(keys, k)
+	}
+	return keys
 }
 
 func (bot *botImpl) BotID() int {

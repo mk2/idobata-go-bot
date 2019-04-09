@@ -127,7 +127,14 @@ func main() {
 		bot.PostMessage(roomID, message)
 	}
 
-	bot, err := idobot.NewBot(idobataURL, idobataAPIToken, userAgent, onStart, onEvent)
+	var onError idobot.OnErrorHandler = func(bot idobot.Bot, err error) {
+		for roomID := range bot.RoomIDs() {
+			errMsg := fmt.Sprintf("エラー: %+v \n%sは終了しますGO。再起動してGO。", err, bot.BotName())
+			bot.PostMessage(roomID, errMsg)
+		}
+	}
+
+	bot, err := idobot.NewBot(idobataURL, idobataAPIToken, userAgent, onStart, onEvent, onError)
 	if err != nil {
 		log.Fatal("Bot cannot be initialized.")
 	}
