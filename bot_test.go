@@ -14,7 +14,8 @@ func TestIdobot_NewBot(t *testing.T) {
 	userAgent := "userAgent"
 	onStart := func(_ idobot.Bot, _ *idobot.SeedMsg) {}
 	onEvent := func(_ idobot.Bot, _ *idobot.EventMsg) {}
-	bot, err := idobot.NewBot(url, apiToken, userAgent, onStart, onEvent)
+	onError := func(_ idobot.Bot, _ error) {}
+	bot, err := idobot.NewBot(url, apiToken, userAgent, onStart, onEvent, onError)
 
 	if bot == nil || err != nil {
 		t.Errorf("idobot cannot instantiated with NewBot\n")
@@ -31,7 +32,8 @@ func TestIdobot_PostMessage(t *testing.T) {
 	userAgent := "userAgent"
 	onStart := func(_ idobot.Bot, _ *idobot.SeedMsg) {}
 	onEvent := func(_ idobot.Bot, _ *idobot.EventMsg) {}
-	bot, err := idobot.NewBot(url, apiToken, userAgent, onStart, onEvent)
+	onError := func(_ idobot.Bot, _ error) {}
+	bot, err := idobot.NewBot(url, apiToken, userAgent, onStart, onEvent, onError)
 
 	if err != nil {
 		t.Errorf("NewBot failed to generate bot.")
