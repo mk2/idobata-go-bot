@@ -2,13 +2,11 @@ FROM golang as builder
 
 ENV GO111MODULE=on
 
-WORKDIR $GOPATH/src/app
+COPY ./ /src/
 
-COPY go.mod go.sum ./
+WORKDIR /src/samples/idobot-gopher
 
 RUN go mod download
-
-COPY . .
 
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o /app
 

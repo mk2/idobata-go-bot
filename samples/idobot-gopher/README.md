@@ -5,11 +5,11 @@ Run Go code from idobata.
 # build
 
 ```sh
-docker build -t gopher .
+./build.sh
 ```
 
 # run
 
 ```sh
-env IDOBATA_API_TOKEN=xxx docker run -d gopher
+env IDOBATA_API_TOKEN=xxx ./start.sh
 ```
