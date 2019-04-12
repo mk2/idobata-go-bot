@@ -1,3 +1,3 @@
 #!/bin/sh
 
-cd ../../; docker build -f samples/idobot-gopher/Dockerfile -t gopher .
+cd ../../; docker build --no-cache -f samples/idobot-gopher/Dockerfile -t gopher .
