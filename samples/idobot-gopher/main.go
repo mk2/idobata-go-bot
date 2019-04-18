@@ -134,10 +134,19 @@ func main() {
 		log.Fatal("IDOBATA_API_TOKEN was not set.")
 	}
 
-	bot, err := idobot.NewBot(idobataURL, idobataAPIToken, userAgent, onStart, onEvent, onError)
+	bot, err := idobot.NewBot(&idobot.NewBotOpts{
+		URL:        idobataURL,
+		APIToken:   idobataAPIToken,
+		UserAgent:  userAgent,
+		BucketName: "gopher",
+		DBName:     "./gopher.db",
+		OnStart:    onStart,
+		OnEvent:    onEvent,
+		OnError:    onError,
+	})
 	if err != nil {
 		log.Fatal("Bot cannot be initialized.")
 	}
 	fmt.Println("Bot was initialized.")
-	bot.Start()
+	bot.Run()
 }

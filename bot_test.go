@@ -33,7 +33,7 @@ func TestIdobot_新しくbotを生成できるか(t *testing.T) {
 		OnEvent:    onEvent,
 		OnError:    onError,
 	})
-	defer bot.DB().Close()
+	defer bot.Stop()
 	defer os.Remove("./test.db")
 
 	isValidBot(t, bot, err)

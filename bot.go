@@ -14,6 +14,7 @@ import (
 
 // Bot idobotを使うプログラムから、idobataへアクセスする方法
 type Bot interface {
+	Run() error
 	Start() error
 	Stop() error
 	PostMessage(roomID int, message string) (string, error)
@@ -160,6 +161,11 @@ func NewBot(opts *NewBotOpts) (Bot, error) {
 		bot.client.Headers[k] = v
 	}
 	return bot, nil
+}
+
+func (bot *botImpl) Run() error {
+	defer bot.Stop()
+	return bot.Start()
 }
 
 func (bot *botImpl) Start() error {
