@@ -98,12 +98,12 @@ func TestIdobot_DBの書き込み読み込み(t *testing.T) {
 
 	isValidBot(t, bot, err)
 
-	err = bot.PutDB("key", "value")
+	err = bot.Save("key", "value")
 	if err != nil {
 		t.Errorf("DBへの書き込みに失敗しました。\n")
 	}
 
-	v, err := bot.GetDB("key")
+	v, err := bot.Read("key")
 	if err != nil {
 		t.Errorf("DBからの読み込みに失敗しました。\n")
 	}

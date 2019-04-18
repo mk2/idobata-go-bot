@@ -21,8 +21,10 @@ type Bot interface {
 	BotID() int
 	BotName() string
 	DB() *bolt.DB
-	PutDB(key, value string) error
-	GetDB(key string) (string, error)
+	Save(key, value string) error
+	SaveBucket(key, value, bucket string) error
+	Read(key string) (string, error)
+	ReadBucket(key, bucket string) (string, error)
 }
 
 // OnStartHandler idobot開始時に呼ばれるコールバック
