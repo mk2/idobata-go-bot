@@ -86,18 +86,19 @@ func (set *roomIDSet) add(i int) bool {
 // botImpl Botインターフェースを実装している実体
 type botImpl struct {
 	Bot
-	url       string
-	botID     int
-	botName   string
-	client    *sse.Client
-	apiToken  string
-	userAgent string
-	prevMsgID int
-	onStart   OnStartHandler
-	onEvent   OnEventHandler
-	onError   OnErrorHandler
-	roomIDs   *roomIDSet
-	db        *bolt.DB
+	url        string
+	botID      int
+	botName    string
+	client     *sse.Client
+	apiToken   string
+	userAgent  string
+	prevMsgID  int
+	onStart    OnStartHandler
+	onEvent    OnEventHandler
+	onError    OnErrorHandler
+	roomIDs    *roomIDSet
+	db         *bolt.DB
+	bucketName string
 }
 
 // 配列に指定の数字が含まれているか確認する
@@ -110,30 +111,48 @@ func contains(s []int, e int) bool {
 	return false
 }
 
+// NewBotOpts 新しくBotを作るときのオプション
+type NewBotOpts struct {
+	URL        string
+	APIToken   string
+	UserAgent  string
+	BucketName string
+	DBName     string
+	OnStart    OnStartHandler
+	OnEvent    OnEventHandler
+	OnError    OnErrorHandler
+}
+
 // NewBot 新しくidobotを作る
-func NewBot(url string, apiToken string, userAgent string, dbName string, onStart OnStartHandler, onEvent OnEventHandler, onError OnErrorHandler) (Bot, error) {
+func NewBot(opts *NewBotOpts) (Bot, error) {
+	// バケット名を決める
+	bucketName := "User"
+	if opts.BucketName != "" {
+		bucketName = opts.BucketName
+	}
 	// boltDBファイルを作成
-	db, err := bolt.Open(dbName, 0600, nil)
+	db, err := bolt.Open(opts.DBName, 0600, nil)
 	err = db.Update(func(tx *bolt.Tx) error {
-		_, err := tx.CreateBucket([]byte("User"))
+		_, err := tx.CreateBucket([]byte(bucketName))
 		return err
 	})
 	if err != nil {
 		return nil, err
 	}
-	accessURL := fmt.Sprintf("%s/api/stream?access_token=%s", url, apiToken)
+	accessURL := fmt.Sprintf("%s/api/stream?access_token=%s", opts.URL, opts.APIToken)
 	client := sse.NewClient(accessURL)
 	bot := &botImpl{
-		url:       url,
-		client:    client,
-		apiToken:  apiToken,
-		onStart:   onStart,
-		onEvent:   onEvent,
-		onError:   onError,
-		userAgent: userAgent,
-		botID:     -1,
-		roomIDs:   &roomIDSet{set: make(map[int]bool)},
-		db:        db,
+		url:        opts.URL,
+		client:     client,
+		apiToken:   opts.APIToken,
+		onStart:    opts.OnStart,
+		onEvent:    opts.OnEvent,
+		onError:    opts.OnError,
+		userAgent:  opts.UserAgent,
+		botID:      -1,
+		roomIDs:    &roomIDSet{set: make(map[int]bool)},
+		db:         db,
+		bucketName: bucketName,
 	}
 	for k, v := range bot.getHeaders() {
 		bot.client.Headers[k] = v

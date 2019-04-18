@@ -14,7 +14,7 @@ func (bot *botImpl) DB() *bolt.DB {
 
 func (bot *botImpl) PutDB(key, value string) error {
 	return bot.db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("User"))
+		b := tx.Bucket([]byte(bot.bucketName))
 		err := b.Put([]byte(key), []byte(value))
 		return err
 	})
@@ -23,7 +23,7 @@ func (bot *botImpl) PutDB(key, value string) error {
 func (bot *botImpl) GetDB(key string) (string, error) {
 	var v string
 	err := bot.db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("User"))
+		b := tx.Bucket([]byte(bot.bucketName))
 		v = string(b.Get([]byte(key)))
 		return nil
 	})

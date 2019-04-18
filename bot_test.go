@@ -9,6 +9,13 @@ import (
 	"github.com/mk2/idobot"
 )
 
+func isValidBot(t *testing.T, bot idobot.Bot, err error) {
+	t.Helper()
+	if bot == nil || err != nil {
+		t.Fatalf("botが正しく生成されていません。\n")
+	}
+}
+
 func TestIdobot_新しくbotを生成できるか(t *testing.T) {
 	url := "url"
 	apiToken := "token"
@@ -16,13 +23,20 @@ func TestIdobot_新しくbotを生成できるか(t *testing.T) {
 	onStart := func(_ idobot.Bot, _ *idobot.SeedMsg) {}
 	onEvent := func(_ idobot.Bot, _ *idobot.EventMsg) {}
 	onError := func(_ idobot.Bot, _ error) {}
-	bot, err := idobot.NewBot(url, apiToken, userAgent, "./test.db", onStart, onEvent, onError)
+	bot, err := idobot.NewBot(&idobot.NewBotOpts{
+		URL:        url,
+		APIToken:   apiToken,
+		UserAgent:  userAgent,
+		BucketName: "",
+		DBName:     "./test.db",
+		OnStart:    onStart,
+		OnEvent:    onEvent,
+		OnError:    onError,
+	})
 	defer bot.DB().Close()
 	defer os.Remove("./test.db")
 
-	if bot == nil || err != nil {
-		t.Errorf("idobot cannot instantiated with NewBot\n")
-	}
+	isValidBot(t, bot, err)
 }
 
 func TestIdobot_PostMessage実行がうまくいくかどうか(t *testing.T) {
@@ -36,13 +50,20 @@ func TestIdobot_PostMessage実行がうまくいくかどうか(t *testing.T) {
 	onStart := func(_ idobot.Bot, _ *idobot.SeedMsg) {}
 	onEvent := func(_ idobot.Bot, _ *idobot.EventMsg) {}
 	onError := func(_ idobot.Bot, _ error) {}
-	bot, err := idobot.NewBot(url, apiToken, userAgent, "./test.db", onStart, onEvent, onError)
+	bot, err := idobot.NewBot(&idobot.NewBotOpts{
+		URL:        url,
+		APIToken:   apiToken,
+		UserAgent:  userAgent,
+		BucketName: "",
+		DBName:     "./test.db",
+		OnStart:    onStart,
+		OnEvent:    onEvent,
+		OnError:    onError,
+	})
 	defer bot.Stop()
 	defer os.Remove("./test.db")
 
-	if err != nil {
-		t.Errorf("NewBot failed to generate bot.")
-	}
+	isValidBot(t, bot, err)
 
 	body, err := bot.PostMessage(100, "test")
 
@@ -62,13 +83,20 @@ func TestIdobot_DBの書き込み読み込み(t *testing.T) {
 	onStart := func(_ idobot.Bot, _ *idobot.SeedMsg) {}
 	onEvent := func(_ idobot.Bot, _ *idobot.EventMsg) {}
 	onError := func(_ idobot.Bot, _ error) {}
-	bot, err := idobot.NewBot(url, apiToken, userAgent, "./test.db", onStart, onEvent, onError)
+	bot, err := idobot.NewBot(&idobot.NewBotOpts{
+		URL:        url,
+		APIToken:   apiToken,
+		UserAgent:  userAgent,
+		BucketName: "",
+		DBName:     "./test.db",
+		OnStart:    onStart,
+		OnEvent:    onEvent,
+		OnError:    onError,
+	})
 	defer bot.Stop()
 	defer os.Remove("./test.db")
 
-	if bot == nil || err != nil {
-		t.Fatalf("idobot cannot instantiated with NewBot\n")
-	}
+	isValidBot(t, bot, err)
 
 	err = bot.PutDB("key", "value")
 	if err != nil {
