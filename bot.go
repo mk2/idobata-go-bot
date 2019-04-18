@@ -9,15 +9,20 @@ import (
 	"strings"
 
 	"github.com/r3labs/sse"
+	bolt "go.etcd.io/bbolt"
 )
 
 // Bot idobotを使うプログラムから、idobataへアクセスする方法
 type Bot interface {
 	Start() error
+	Stop() error
 	PostMessage(roomID int, message string) (string, error)
 	RoomIDs() []int
 	BotID() int
 	BotName() string
+	DB() *bolt.DB
+	PutDB(key, value string) error
+	GetDB(key string) (string, error)
 }
 
 // OnStartHandler idobot開始時に呼ばれるコールバック
@@ -92,6 +97,7 @@ type botImpl struct {
 	onEvent   OnEventHandler
 	onError   OnErrorHandler
 	roomIDs   *roomIDSet
+	db        *bolt.DB
 }
 
 // 配列に指定の数字が含まれているか確認する
@@ -105,7 +111,16 @@ func contains(s []int, e int) bool {
 }
 
 // NewBot 新しくidobotを作る
-func NewBot(url string, apiToken string, userAgent string, onStart OnStartHandler, onEvent OnEventHandler, onError OnErrorHandler) (Bot, error) {
+func NewBot(url string, apiToken string, userAgent string, dbName string, onStart OnStartHandler, onEvent OnEventHandler, onError OnErrorHandler) (Bot, error) {
+	// boltDBファイルを作成
+	db, err := bolt.Open(dbName, 0600, nil)
+	err = db.Update(func(tx *bolt.Tx) error {
+		_, err := tx.CreateBucket([]byte("User"))
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
 	accessURL := fmt.Sprintf("%s/api/stream?access_token=%s", url, apiToken)
 	client := sse.NewClient(accessURL)
 	bot := &botImpl{
@@ -118,6 +133,7 @@ func NewBot(url string, apiToken string, userAgent string, onStart OnStartHandle
 		userAgent: userAgent,
 		botID:     -1,
 		roomIDs:   &roomIDSet{set: make(map[int]bool)},
+		db:        db,
 	}
 	for k, v := range bot.getHeaders() {
 		bot.client.Headers[k] = v
@@ -167,6 +183,11 @@ func (bot *botImpl) Start() error {
 
 	bot.onError(bot, err)
 
+	return err
+}
+
+func (bot *botImpl) Stop() error {
+	err := bot.db.Close()
 	return err
 }
 
@@ -220,20 +241,4 @@ func (bot *botImpl) PostMessage(roomID int, message string) (string, error) {
 	defer res.Body.Close()
 
 	return bodyString, nil
-}
-
-func (bot *botImpl) RoomIDs() []int {
-	keys := make([]int, 0, len(bot.roomIDs.set))
-	for k := range bot.roomIDs.set {
-		keys = append(keys, k)
-	}
-	return keys
-}
-
-func (bot *botImpl) BotID() int {
-	return bot.botID
-}
-
-func (bot *botImpl) BotName() string {
-	return bot.botName
 }
