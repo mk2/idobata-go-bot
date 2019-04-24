@@ -14,6 +14,7 @@ import (
 
 // Bot idobotを使うプログラムから、idobataへアクセスする方法
 type Bot interface {
+	Store
 	Run() error
 	Start() error
 	Stop() error
@@ -21,11 +22,6 @@ type Bot interface {
 	RoomIDs() []int
 	BotID() int
 	BotName() string
-	DB() *bolt.DB
-	Save(key, value string) error
-	SaveBucket(key, value, bucket string) error
-	Read(key string) (string, error)
-	ReadBucket(key, bucket string) (string, error)
 }
 
 // OnStartHandler idobot開始時に呼ばれるコールバック
