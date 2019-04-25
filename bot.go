@@ -196,8 +196,7 @@ func (bot *botImpl) Start() error {
 }
 
 func (bot *botImpl) Stop() error {
-	err := bot.store.Close()
-	return err
+	return bot.store.Close()
 }
 
 func (bot *botImpl) getHeaders() map[string]string {

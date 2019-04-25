@@ -138,7 +138,7 @@ func main() {
 		URL:           idobataURL,
 		APIToken:      idobataAPIToken,
 		UserAgent:     userAgent,
-		StoreFilePath: "./gopher.store",
+		StoreFilePath: "/app_data/gopher.store",
 		OnStart:       onStart,
 		OnEvent:       onEvent,
 		OnError:       onError,

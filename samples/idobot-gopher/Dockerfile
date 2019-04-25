@@ -14,7 +14,13 @@ RUN go mod download
 
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o /app
 
+RUN mkdir /app_data
+
+VOLUME /app_data
+
 FROM scratch
+
+COPY --from=builder /app_data /app_data
 
 COPY --from=builder /app /app
 
