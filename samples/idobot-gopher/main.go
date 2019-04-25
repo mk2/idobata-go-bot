@@ -135,14 +135,13 @@ func main() {
 	}
 
 	bot, err := idobot.NewBot(&idobot.NewBotOpts{
-		URL:        idobataURL,
-		APIToken:   idobataAPIToken,
-		UserAgent:  userAgent,
-		BucketName: "gopher",
-		DBName:     "./gopher.db",
-		OnStart:    onStart,
-		OnEvent:    onEvent,
-		OnError:    onError,
+		URL:           idobataURL,
+		APIToken:      idobataAPIToken,
+		UserAgent:     userAgent,
+		StoreFilePath: "./gopher.store",
+		OnStart:       onStart,
+		OnEvent:       onEvent,
+		OnError:       onError,
 	})
 	if err != nil {
 		log.Fatal("Bot cannot be initialized.")

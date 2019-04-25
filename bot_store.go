@@ -19,6 +19,7 @@ import (
 type Store interface {
 	Save(name, content string) error
 	Read(name string) (string, error)
+	Close() error
 }
 
 func NewStore(path string) (Store, error) {
@@ -72,4 +73,8 @@ func (st *StoreImpl) Read(name string) (string, error) {
 	})
 
 	return content, err
+}
+
+func (st *StoreImpl) Close() error {
+	return st.db.Close()
 }

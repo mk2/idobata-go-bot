@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/r3labs/sse"
-	bolt "go.etcd.io/bbolt"
 )
 
 // Bot idobotを使うプログラムから、idobataへアクセスする方法
@@ -85,19 +84,18 @@ func (set *roomIDSet) add(i int) bool {
 // botImpl Botインターフェースを実装している実体
 type botImpl struct {
 	Bot
-	url        string
-	botID      int
-	botName    string
-	client     *sse.Client
-	apiToken   string
-	userAgent  string
-	prevMsgID  int
-	onStart    OnStartHandler
-	onEvent    OnEventHandler
-	onError    OnErrorHandler
-	roomIDs    *roomIDSet
-	db         *bolt.DB
-	bucketName string
+	url       string
+	botID     int
+	botName   string
+	client    *sse.Client
+	apiToken  string
+	userAgent string
+	prevMsgID int
+	onStart   OnStartHandler
+	onEvent   OnEventHandler
+	onError   OnErrorHandler
+	roomIDs   *roomIDSet
+	store     Store
 }
 
 // 配列に指定の数字が含まれているか確認する
@@ -112,46 +110,34 @@ func contains(s []int, e int) bool {
 
 // NewBotOpts 新しくBotを作るときのオプション
 type NewBotOpts struct {
-	URL        string
-	APIToken   string
-	UserAgent  string
-	BucketName string
-	DBName     string
-	OnStart    OnStartHandler
-	OnEvent    OnEventHandler
-	OnError    OnErrorHandler
+	URL           string
+	APIToken      string
+	UserAgent     string
+	StoreFilePath string
+	OnStart       OnStartHandler
+	OnEvent       OnEventHandler
+	OnError       OnErrorHandler
 }
 
 // NewBot 新しくidobotを作る
 func NewBot(opts *NewBotOpts) (Bot, error) {
-	// バケット名を決める
-	bucketName := "User"
-	if opts.BucketName != "" {
-		bucketName = opts.BucketName
-	}
-	// boltDBファイルを作成
-	db, err := bolt.Open(opts.DBName, 0600, nil)
-	err = db.Update(func(tx *bolt.Tx) error {
-		_, err := tx.CreateBucket([]byte(bucketName))
-		return err
-	})
+	store, err := NewStore(opts.StoreFilePath)
 	if err != nil {
 		return nil, err
 	}
 	accessURL := fmt.Sprintf("%s/api/stream?access_token=%s", opts.URL, opts.APIToken)
 	client := sse.NewClient(accessURL)
 	bot := &botImpl{
-		url:        opts.URL,
-		client:     client,
-		apiToken:   opts.APIToken,
-		onStart:    opts.OnStart,
-		onEvent:    opts.OnEvent,
-		onError:    opts.OnError,
-		userAgent:  opts.UserAgent,
-		botID:      -1,
-		roomIDs:    &roomIDSet{set: make(map[int]bool)},
-		db:         db,
-		bucketName: bucketName,
+		url:       opts.URL,
+		client:    client,
+		apiToken:  opts.APIToken,
+		onStart:   opts.OnStart,
+		onEvent:   opts.OnEvent,
+		onError:   opts.OnError,
+		userAgent: opts.UserAgent,
+		botID:     -1,
+		roomIDs:   &roomIDSet{set: make(map[int]bool)},
+		store:     store,
 	}
 	for k, v := range bot.getHeaders() {
 		bot.client.Headers[k] = v
@@ -210,7 +196,7 @@ func (bot *botImpl) Start() error {
 }
 
 func (bot *botImpl) Stop() error {
-	err := bot.db.Close()
+	err := bot.store.Close()
 	return err
 }
 

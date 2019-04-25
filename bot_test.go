@@ -24,14 +24,13 @@ func TestIdobot_新しくbotを生成できるか(t *testing.T) {
 	onEvent := func(_ idobot.Bot, _ *idobot.EventMsg) {}
 	onError := func(_ idobot.Bot, _ error) {}
 	bot, err := idobot.NewBot(&idobot.NewBotOpts{
-		URL:        url,
-		APIToken:   apiToken,
-		UserAgent:  userAgent,
-		BucketName: "",
-		DBName:     "./test.db",
-		OnStart:    onStart,
-		OnEvent:    onEvent,
-		OnError:    onError,
+		URL:           url,
+		APIToken:      apiToken,
+		UserAgent:     userAgent,
+		StoreFilePath: "./test.db",
+		OnStart:       onStart,
+		OnEvent:       onEvent,
+		OnError:       onError,
 	})
 	defer bot.Stop()
 	defer os.Remove("./test.db")
@@ -51,14 +50,13 @@ func TestIdobot_PostMessage実行がうまくいくかどうか(t *testing.T) {
 	onEvent := func(_ idobot.Bot, _ *idobot.EventMsg) {}
 	onError := func(_ idobot.Bot, _ error) {}
 	bot, err := idobot.NewBot(&idobot.NewBotOpts{
-		URL:        url,
-		APIToken:   apiToken,
-		UserAgent:  userAgent,
-		BucketName: "",
-		DBName:     "./test.db",
-		OnStart:    onStart,
-		OnEvent:    onEvent,
-		OnError:    onError,
+		URL:           url,
+		APIToken:      apiToken,
+		UserAgent:     userAgent,
+		StoreFilePath: "./test.db",
+		OnStart:       onStart,
+		OnEvent:       onEvent,
+		OnError:       onError,
 	})
 	defer bot.Stop()
 	defer os.Remove("./test.db")
